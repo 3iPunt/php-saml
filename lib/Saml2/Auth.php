@@ -299,7 +299,6 @@ class OneLogin_Saml2_Auth
      * @param string $url        The target URL to redirect the user.
      * @param array  $parameters Extra parameters to be passed as part of the url
      * @param bool   $stay       True if we want to stay (returns the url string) False to redirect
-     * @return string|null
      */
     public function redirectTo($url = '', $parameters = array(), $stay = false)
     {
@@ -310,7 +309,78 @@ class OneLogin_Saml2_Auth
             $url = $_REQUEST['RelayState'];
         }
 
-        return OneLogin_Saml2_Utils::redirect($url, $parameters, $stay);
+        self::showForm($url, $parameters);
+        exit();
+
+    }
+    /**
+     * Shows form that we defined in our SSO Request.
+     * Allowing a POST call
+     *
+     * @param string $url
+     * @param array $parameters
+     * @author abertranb
+     */
+    private static function showForm($url = '', $parameters = array()) {
+        ?>
+        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+            "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+        <head>
+            <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+            <title>POST data</title>
+        </head>
+        <body onload="document.getElementsByTagName('input')[0].click();">
+
+        <noscript>
+            <p><strong>Note:</strong> Since your browser does not support JavaScript, you must press the button below once to proceed.</p>
+        </noscript>
+
+        <form method="post" action="<?php echo htmlspecialchars($url); ?>">
+            <!-- Need to add this element and call click method, because calling submit()
+            on the form causes failed submission if the form has another element with name or id of submit.
+        See: https://developer.mozilla.org/en/DOM/form.submit#Specification -->
+            <input type="submit" style="display:none;" />
+            <?php
+
+            foreach ($parameters as $name => $value) {
+                self::printItem($name, $value);
+            }
+            ?>
+
+            <noscript>
+                <button type="submit" class="btn">Submit</button>
+            </noscript>
+        </form>
+
+        </body>
+        </html>
+
+        <?php
+    }
+
+    /**
+     * Write out one or more INPUT elements for the given name-value pair.
+     *
+     * If the value is a string, this function will write a single INPUT element.
+     * If the value is an array, it will write multiple INPUT elements to
+     * recreate the array.
+     *
+     * @param string $name  The name of the element.
+     * @param string|array $value  The value of the element.
+     * @author abertranb
+     */
+    private static function printItem($name, $value) {
+
+        if (is_string($value)) {
+            echo '<input type="hidden" name="' . htmlspecialchars($name) . '" value="' . htmlspecialchars($value) . '" />';
+            return;
+        }
+
+        // This is an array...
+        foreach ($value as $index => $item) {
+            self::printItem($name . '[' . $index . ']', $item);
+        }
     }
 
     /**
